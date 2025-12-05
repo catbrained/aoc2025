@@ -8,25 +8,27 @@ fn solve_bank(input: &str) -> usize {
     for idx in 0..(bytes.len() - 1) {
         if bytes[idx] > result[0] {
             result[0] = bytes[idx];
-            result[1] = find_largest(&bytes[idx + 1..]);
+            result[1] = find_largest(&bytes[idx + 1..]).1;
         }
     }
 
     str::from_utf8(&result).unwrap().parse().unwrap()
 }
 
-fn find_largest(input: &[u8]) -> u8 {
+fn find_largest(input: &[u8]) -> (usize, u8) {
     let mut largest = 0;
-    for &b in input {
+    let mut idx = 0;
+    for (n, &b) in input.iter().enumerate() {
         if b > largest {
             largest = b;
+            idx = n;
         }
         if b == 9 {
             break;
         }
     }
 
-    largest
+    (idx, largest)
 }
 
 #[cfg(test)]
