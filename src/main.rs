@@ -10,6 +10,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 
 fn main() {
     let mut output = stdout().lock();
@@ -96,5 +97,11 @@ fn main() {
     writeln!(output, "=== Day 7 - second puzzle ===").unwrap();
     // Uses the same input as the previous puzzle
     let result = day7::solve_puzzle_b(&input);
+    writeln!(output, "Solution: `{result}`").unwrap();
+
+    // Day 8 - First puzzle
+    writeln!(output, "=== Day 8 - First puzzle ===").unwrap();
+    let input = read_to_string("./day_8_a_input.txt").unwrap();
+    let result = day8::solve_puzzle_a(&input);
     writeln!(output, "Solution: `{result}`").unwrap();
 }
