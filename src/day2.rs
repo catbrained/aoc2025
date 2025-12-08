@@ -49,14 +49,11 @@ fn solve_range_two(range: RangeInclusive<usize>) -> Vec<usize> {
     let mut invalid_ids = Vec::new();
     for id in range {
         let id_str = id.to_string();
+        let len = id_str.len();
         let id_bytes = id_str.as_bytes();
-        for chunk_size in (1..=(id_bytes.len() / 2)).rev() {
-            let mut chunks = id_bytes.chunks_exact(chunk_size);
-            if !chunks.remainder().is_empty() {
-                continue;
-            }
-            let pattern = chunks.next().unwrap();
-            if chunks.all(|e| e == pattern) {
+        let double = format!("{}{}", &id_str[1..], &id_str[..len - 1]);
+        for window in double.as_bytes().windows(len) {
+            if window == id_bytes {
                 invalid_ids.push(id);
                 break;
             }
