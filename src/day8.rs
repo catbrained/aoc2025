@@ -37,25 +37,41 @@ impl JunctionBox {
 }
 
 pub fn solve_puzzle_a(input: &str) -> usize {
-    solve_puzzle(input, 1000, 3)
+    solve_puzzle(input, 1000, 3, false)
 }
 
-fn solve_puzzle(input: &str, num_pairs: usize, num_circuits: usize) -> usize {
+pub fn solve_puzzle_b(input: &str) -> usize {
+    solve_puzzle(input, usize::MAX, usize::MAX, true)
+}
+
+fn solve_puzzle(input: &str, num_pairs: usize, num_circuits: usize, part_two: bool) -> usize {
     let mut junctions = Vec::new();
     for line in input.lines() {
         junctions.push(line.into());
     }
+    let num_junctions = junctions.len();
     let mut pairs = build_pairs(&junctions);
     pairs.sort_unstable_by(|a, b| a.dist.total_cmp(&b.dist));
-    let mut circuits: Vec<HashSet<JunctionBox>> = build_circuits(&pairs, num_pairs);
-    circuits.sort_unstable_by_key(|circ| circ.len());
+    let circuits = build_circuits(&pairs, num_pairs, num_junctions);
 
-    circuits
-        .iter()
-        .rev()
-        .take(num_circuits)
-        .map(|circ| circ.len())
-        .product()
+    if part_two {
+        let Either::Part2(result) = circuits else {
+            unreachable!();
+        };
+        result
+    } else {
+        let Either::Part1(mut circuits) = circuits else {
+            unreachable!();
+        };
+        circuits.sort_unstable_by_key(|circ| circ.len());
+
+        circuits
+            .iter()
+            .rev()
+            .take(num_circuits)
+            .map(|circ| circ.len())
+            .product()
+    }
 }
 
 fn build_pairs(junctions: &[JunctionBox]) -> Vec<Pair<'_>> {
@@ -74,8 +90,9 @@ fn build_pairs(junctions: &[JunctionBox]) -> Vec<Pair<'_>> {
     pairs
 }
 
-fn build_circuits(pairs: &[Pair], num_pairs: usize) -> Vec<HashSet<JunctionBox>> {
+fn build_circuits(pairs: &[Pair], num_pairs: usize, num_junctions: usize) -> Either {
     let mut circuits: Vec<HashSet<JunctionBox>> = Vec::new();
+    let mut added_junctions = HashSet::new();
     for (a, b) in pairs.iter().take(num_pairs).map(|p| (p.a, p.b)) {
         let mut connected = circuits
             .iter_mut()
@@ -83,28 +100,49 @@ fn build_circuits(pairs: &[Pair], num_pairs: usize) -> Vec<HashSet<JunctionBox>>
         if let Some(circ) = connected.next() {
             let _ = circ.insert(*a);
             let _ = circ.insert(*b);
+            let _ = added_junctions.insert(*a);
+            let _ = added_junctions.insert(*b);
             for other in connected {
                 circ.extend(other.drain());
+            }
+            if added_junctions.len() == num_junctions {
+                debug_assert_eq!(circuits.iter().filter(|circ| !circ.is_empty()).count(), 1);
+                return Either::Part2(a.x * b.x);
             }
         } else {
             let mut new_circ = HashSet::new();
             let _ = new_circ.insert(*a);
             let _ = new_circ.insert(*b);
+            let _ = added_junctions.insert(*a);
+            let _ = added_junctions.insert(*b);
             circuits.push(new_circ);
         }
     }
 
-    circuits
+    Either::Part1(circuits)
+}
+
+#[derive(Debug)]
+enum Either {
+    Part1(Vec<HashSet<JunctionBox>>),
+    Part2(usize),
 }
 
 #[cfg(test)]
 mod tests {
-    use super::solve_puzzle;
+    use super::{solve_puzzle, solve_puzzle_b};
 
     #[test]
     fn example() {
         let input = "162,817,812\n57,618,57\n906,360,560\n592,479,940\n352,342,300\n466,668,158\n542,29,236\n431,825,988\n739,650,466\n52,470,668\n216,146,977\n819,987,18\n117,168,530\n805,96,715\n346,949,466\n970,615,88\n941,993,340\n862,61,35\n984,92,344\n425,690,689\n";
 
-        assert_eq!(solve_puzzle(input, 10, 3), 40);
+        assert_eq!(solve_puzzle(input, 10, 3, false), 40);
+    }
+
+    #[test]
+    fn example2() {
+        let input = "162,817,812\n57,618,57\n906,360,560\n592,479,940\n352,342,300\n466,668,158\n542,29,236\n431,825,988\n739,650,466\n52,470,668\n216,146,977\n819,987,18\n117,168,530\n805,96,715\n346,949,466\n970,615,88\n941,993,340\n862,61,35\n984,92,344\n425,690,689\n";
+
+        assert_eq!(solve_puzzle_b(input), 25272);
     }
 }
