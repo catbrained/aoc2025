@@ -3,7 +3,7 @@ use std::collections::{HashSet, VecDeque};
 pub fn solve_puzzle_a(input: &str) -> usize {
     let machines = input.lines().map(|l| l.into());
 
-    machines.map(|mut m: Machine| m.configure()).sum()
+    machines.map(|m: Machine| m.configure()).sum()
 }
 
 type Button = HashSet<usize>;
@@ -15,7 +15,7 @@ struct Machine {
 }
 
 impl Machine {
-    fn configure(&mut self) -> usize {
+    fn configure(&self) -> usize {
         let mut queue = VecDeque::new();
         let mut seen_states = Vec::new();
         let root = HashSet::new();
