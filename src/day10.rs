@@ -51,11 +51,11 @@ impl Machine {
     }
 
     fn configure_joltage(&self) -> usize {
-        let rows = self.joltage_target.len();
-        let cols = self.buttons.len() + 1;
+        let rows = self.buttons.len() + 1;
+        let cols = self.joltage_target.len() + self.buttons.len() + 2;
         let mut matrix = Vec::with_capacity(rows * cols);
-        for (target_idx, &target) in self.joltage_target.iter().enumerate() {
-            for button in self.buttons.iter() {
+        for (button_idx, button) in self.buttons.iter().enumerate() {
+            for (target_idx, _) in self.joltage_target.iter().enumerate() {
                 let b = if button.contains(&target_idx) {
                     1.0
                 } else {
@@ -63,58 +63,129 @@ impl Machine {
                 };
                 matrix.push(b);
             }
-            matrix.push(target as f64);
+            for n in 0..self.buttons.len() {
+                if n == button_idx {
+                    matrix.push(1.0);
+                } else {
+                    matrix.push(0.0);
+                }
+            }
+            matrix.push(0.0);
+            matrix.push(1.0);
         }
+        for &target in self.joltage_target.iter() {
+            matrix.push(-(target as f64));
+        }
+        matrix.extend(std::iter::repeat_n(0.0, self.buttons.len()));
+        matrix.push(1.0);
+        matrix.push(0.0);
         debug_assert_eq!(matrix.len(), rows * cols);
-        for row in 0..rows {
-            println!("{:+.2?}", &matrix[(row * cols)..(row * cols + cols)]);
-        }
-        println!("_______________");
 
-        // See: `https://en.wikipedia.org/wiki/Gaussian_elimination`
-        const EPSILON: f64 = 1.0E-10;
-        let mut pivot_row = 0;
-        let mut pivot_col = 0;
-        while pivot_row < rows && pivot_col < cols {
-            // Find pivot
-            let mut max = f64::MIN;
-            let mut max_idx = pivot_row;
-            for row in pivot_row..rows {
-                let c = matrix[row * cols + pivot_col].abs();
-                if c > max {
-                    max = c;
-                    max_idx = row;
+        // Apply simplex algorithm
+        loop {
+            // Find pivot column
+            let mut pivot_col = 0;
+            let mut largest_negative = f64::MAX;
+            for col in 0..(cols - 1) {
+                let c = matrix[(rows - 1) * cols + col];
+                if c < 0.0 && c < largest_negative {
+                    pivot_col = col;
+                    largest_negative = c;
                 }
             }
-            // Check if found pivot is zero.
-            // (With tolerance to account for floating point precision limits)
-            if matrix[max_idx * cols + pivot_col].abs() <= EPSILON {
-                // No pivot in this column. Move to next one.
-                pivot_col += 1;
-            } else {
-                // Swap rows
+            if largest_negative == f64::MAX {
+                // We are done!
+                break;
+            }
+            // Find pivot row
+            let mut pivot_row = 0;
+            let mut smallest_fraction = f64::MAX;
+            for row in 0..(rows - 1) {
+                let b = matrix[row * cols + cols - 1];
+                let a = matrix[row * cols + pivot_col];
+                if a <= 0.0 {
+                    continue;
+                }
+                let f = b / a;
+                if f < smallest_fraction {
+                    pivot_row = row;
+                    smallest_fraction = f;
+                }
+            }
+            let pivot = matrix[pivot_row * cols + pivot_col];
+            debug_assert!(pivot != 0.0);
+            // Divide pivot row by pivot
+            matrix[pivot_row * cols + pivot_col] = 1.0;
+            for col in 0..cols {
+                if col == pivot_col {
+                    continue;
+                }
+                matrix[pivot_row * cols + col] /= pivot;
+            }
+            // Set other rows in pivot column to zero.
+            for row in 0..rows {
+                if row == pivot_row {
+                    continue;
+                }
+                let factor = matrix[row * cols + pivot_col];
+                matrix[row * cols + pivot_col] = 0.0;
                 for col in 0..cols {
-                    matrix.swap(pivot_row * cols + col, max_idx * cols + col);
-                }
-                // For all rows below pivot
-                for row in (pivot_row + 1)..rows {
-                    let factor =
-                        matrix[row * cols + pivot_col] / matrix[pivot_row * cols + pivot_col];
-                    // Set lower part of pivot column to zero.
-                    matrix[row * cols + pivot_col] = 0.0;
-                    // Subtract multiplied pivot row from remaining elements of current row.
-                    for col in (pivot_col + 1)..cols {
-                        matrix[row * cols + col] -= matrix[pivot_row * cols + col] * factor;
+                    if col == pivot_col {
+                        continue;
                     }
+                    matrix[row * cols + col] -= matrix[pivot_row * cols + col] * factor;
                 }
-                pivot_col += 1;
-                pivot_row += 1;
             }
         }
-        for row in 0..rows {
-            println!("{:+.2?}", &matrix[(row * cols)..(row * cols + cols)]);
+        // println!("{:+.3?}", &matrix[((rows - 1) * cols)..]);
+
+        // Buttons can only be pressed an integer number of times and also presses >= 0.
+        let range_start = (rows - 1) * cols + self.joltage_target.len();
+        let range_end = range_start + self.buttons.len();
+        let coefficients: Vec<_> = matrix[range_start..range_end]
+            .iter()
+            .map(|&f| {
+                let f = f.trunc();
+                if f < 0.0 { 0_usize } else { f as usize }
+            })
+            .collect();
+        // The simplex algorithm above did not operate on integers.
+        // Therefore, we might not yet have the optimal _integer_ solution,
+        // only the optimal non-integer one, turned into integers by truncating and clamping negative numbers to zero.
+        // The truncated and clamped solution might not even be a valid solution anymore.
+        // So now we need to start searching the area around the current "solution" for valid
+        // solutions and then take the best one.
+        let minus_one = coefficients.iter().map(|&c| c.saturating_sub(1)).collect();
+        let plus_one = coefficients.iter().map(|&c| c + 1).collect();
+        let mut best_valid = usize::MAX;
+        for list in [&coefficients, &minus_one, &plus_one] {
+            let mut current_presses = 0;
+            for (joltage_idx, &target) in self.joltage_target.iter().enumerate() {
+                let sum: usize = list
+                    .iter()
+                    .zip(&self.buttons)
+                    .map(|(&c, btn)| if btn.contains(&joltage_idx) { c } else { 0 })
+                    .sum();
+                if sum == target && current_presses + sum < best_valid {
+                    current_presses += sum;
+                } else {
+                    current_presses = 0;
+                    break;
+                }
+            }
+            if current_presses != 0 && current_presses < best_valid {
+                println!("Found new best! Previous: {best_valid}, New: {current_presses}");
+                best_valid = current_presses;
+                current_presses = 0;
+            }
         }
-        todo!()
+
+        let solution = *matrix.last().unwrap();
+
+        debug_assert!(solution > 0.0);
+        debug_assert!(solution.is_finite());
+
+        solution as usize
     }
 }
 
