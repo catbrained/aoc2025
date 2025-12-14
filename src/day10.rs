@@ -7,9 +7,18 @@ pub fn solve_puzzle_a(input: &str) -> usize {
 }
 
 pub fn solve_puzzle_b(input: &str) -> usize {
-    let machines = input.lines().map(|l| l.into());
-
-    machines.map(|m: Machine| m.configure_joltage()).sum()
+    let machines: Vec<Machine> = input.lines().map(|l| l.into()).collect();
+    let thread_count = std::thread::available_parallelism().unwrap().get();
+    let chunk_size = (machines.len() / thread_count) + 1;
+    let chunks = machines.chunks(chunk_size);
+    std::thread::scope(|s| {
+        let mut join_handles = Vec::with_capacity(thread_count);
+        for chunk in chunks {
+            let handle = s.spawn(|| chunk.iter().map(|m| m.configure_joltage()).sum::<usize>());
+            join_handles.push(handle);
+        }
+        join_handles.into_iter().map(|h| h.join().unwrap()).sum()
+    })
 }
 
 type Button = HashSet<usize>;
