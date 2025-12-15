@@ -155,6 +155,7 @@
             packages = [
               pkgs.lldb
               pkgs.hyperfine
+              pkgs.cargo-flamegraph
             ];
           };
         }
