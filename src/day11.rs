@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 pub fn solve_puzzle_a(input: &str) -> usize {
-    let graph = Graph::from(input);
+    let graph = Graph::parse(input, "you", "out", &[]);
 
     graph.num_paths(graph.root, graph.target)
 }
@@ -10,13 +10,14 @@ pub fn solve_puzzle_a(input: &str) -> usize {
 type Edge = (usize, usize);
 
 #[derive(Debug)]
-struct Graph {
+struct Graph<'a> {
     root: usize,
     target: usize,
+    interest: HashMap<&'a str, usize>,
     edges: Vec<Edge>,
 }
 
-impl Graph {
+impl<'a> Graph<'a> {
     fn num_paths(&self, start: usize, target: usize) -> usize {
         let mut num_paths = 0;
         let mut queue = VecDeque::new();
@@ -40,26 +41,17 @@ impl Graph {
 
         num_paths
     }
-}
 
-impl From<&str> for Graph {
-    fn from(value: &str) -> Self {
+    fn parse(input: &'a str, root: &str, target: &str, interest: &[&str]) -> Graph<'a> {
         let mut node_names = HashMap::new();
         let mut next_id = 0;
         let mut edges = Vec::new();
-        let mut root = 0;
-        let mut target = 0;
 
-        for line in value.lines() {
+        for line in input.lines() {
             let (n, out) = line.split_once(':').unwrap();
             let n_id = *node_names.entry(n).or_insert_with(|| {
                 let n_id = next_id;
                 next_id += 1;
-                if n == "you" {
-                    root = n_id;
-                } else if n == "out" {
-                    target = n_id;
-                }
 
                 n_id
             });
@@ -67,11 +59,6 @@ impl From<&str> for Graph {
                 let o_id = *node_names.entry(o).or_insert_with(|| {
                     let o_id = next_id;
                     next_id += 1;
-                    if o == "you" {
-                        root = o_id;
-                    } else if o == "out" {
-                        target = o_id;
-                    }
 
                     o_id
                 });
@@ -80,10 +67,14 @@ impl From<&str> for Graph {
         }
 
         edges.sort_unstable_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
+        let root = *node_names.get(root).unwrap();
+        let target = *node_names.get(target).unwrap();
+        node_names.retain(|k, _| interest.contains(k));
 
         Self {
             root,
             target,
+            interest: node_names,
             edges,
         }
     }
