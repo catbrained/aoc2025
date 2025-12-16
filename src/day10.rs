@@ -90,13 +90,8 @@ impl Machine {
             {
                 let result = matrix[row * cols + cols - 1];
                 debug_assert!(result >= 0);
-                // FIXME: Something very weird is going on with these `println`s. Two of them cause the program
-                // to hang if they are uncommented, but one of them is fine.
-                // Doesn't matter if the debug assertions cfg is there or not. Doesn't matter if we spawn
-                // one thread or 16. Doesn't matter if it's release mode or debug.
-                // This one is one that does cause issues.
-                // #[cfg(debug_assertions)]
-                // println!("Found a fast solution for machine: `{result}`. Yay! :)");
+                #[cfg(debug_assertions)]
+                eprintln!("Found a fast solution for machine: `{result}`. Yay! :)");
                 return result as usize;
             }
         }
@@ -175,13 +170,8 @@ impl Machine {
                 .map(|row| matrix[row * cols + cols - 1])
                 .sum::<i32>();
             debug_assert!(sum >= 0);
-            // FIXME: Something very weird is going on with these `println`s. Two of them cause the program
-            // to hang if they are uncommented, but one of them is fine.
-            // Doesn't matter if the debug assertions cfg is there or not. Doesn't matter if we spawn
-            // one thread or 16. Doesn't matter if it's release mode or debug.
-            // This one is the println that seemingly doesn't cause issues.
             #[cfg(debug_assertions)]
-            println!("Found a result for machine without brute force: `{sum}`. Yay! :)");
+            eprintln!("Found a result for machine without brute force: `{sum}`. Yay! :)");
             return sum as usize;
         }
 
@@ -235,13 +225,8 @@ impl Machine {
         )
         .unwrap();
         debug_assert!(solution >= 0);
-        // FIXME: Something very weird is going on with these `println`s. Two of them cause the program
-        // to hang if they are uncommented, but one of them is fine.
-        // Doesn't matter if the debug assertions cfg is there or not. Doesn't matter if we spawn
-        // one thread or 16. Doesn't matter if it's release mode or debug.
-        // This one is one that does cause issues.
-        // #[cfg(debug_assertions)]
-        // println!("Found solution for machine: {solution}");
+        #[cfg(debug_assertions)]
+        eprintln!("Found solution for machine: {solution}");
         solution as usize
     }
 }
