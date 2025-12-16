@@ -69,6 +69,52 @@ impl<'a> Graph<'a> {
         edges.sort_unstable_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
         let root = *node_names.get(root).unwrap();
         let target = *node_names.get(target).unwrap();
+
+        // let file = std::fs::File::create_new("day11.dot").unwrap();
+        // let mut writer = std::io::BufWriter::new(file);
+        // writer.write_all(b"digraph G {\n").unwrap();
+        // writer
+        //     .write_all(b"SVR [style=filled, fillcolor=coral]\n")
+        //     .unwrap();
+        // writer
+        //     .write_all(b"TARGET [style=filled, fillcolor=coral]\n")
+        //     .unwrap();
+        // writer
+        //     .write_all(b"DAC [style=filled, fillcolor=coral]\n")
+        //     .unwrap();
+        // writer
+        //     .write_all(b"FFT [style=filled, fillcolor=coral]\n")
+        //     .unwrap();
+        // writer
+        //     .write_all(b"YOU [style=filled, fillcolor=coral]\n")
+        //     .unwrap();
+        // let dac = *node_names.get("dac").unwrap();
+        // let fft = *node_names.get("fft").unwrap();
+        // let you = *node_names.get("you").unwrap();
+        // let svr = *node_names.get("svr").unwrap();
+        // for (from, to) in edges.iter() {
+        //     let from = match *from {
+        //         i if i == you => "YOU".to_string(),
+        //         i if i == svr => "SVR".to_string(),
+        //         i if i == target => "TARGET".to_string(),
+        //         i if i == dac => "DAC".to_string(),
+        //         i if i == fft => "FFT".to_string(),
+        //         _ => format!("{from}"),
+        //     };
+        //     let to = match *to {
+        //         i if i == you => "YOU".to_string(),
+        //         i if i == svr => "SVR".to_string(),
+        //         i if i == target => "TARGET".to_string(),
+        //         i if i == dac => "DAC".to_string(),
+        //         i if i == fft => "FFT".to_string(),
+        //         _ => format!("{to}"),
+        //     };
+        //     writer
+        //         .write_all(format!("{from} -> {to}\n").as_bytes())
+        //         .unwrap();
+        // }
+        // writer.write_all(b"}\n").unwrap();
+
         node_names.retain(|k, _| interest.contains(k));
 
         Self {
