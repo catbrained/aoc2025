@@ -141,4 +141,10 @@ fn main() {
     let input = read_to_string("./day_11_a_input.txt").unwrap();
     let result = day11::solve_puzzle_a(&input);
     writeln!(stdout().lock(), "Solution: `{result}`").unwrap();
+
+    // Day 11 - Second puzzle
+    writeln!(stdout().lock(), "=== Day 11 - second puzzle ===").unwrap();
+    // Uses the same input as the previous puzzle
+    let result = day11::solve_puzzle_b(&input);
+    writeln!(stdout().lock(), "Solution: `{result}`").unwrap();
 }
