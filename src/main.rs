@@ -6,6 +6,7 @@ use std::{
 mod day1;
 mod day10;
 mod day11;
+mod day12;
 mod day2;
 mod day3;
 mod day4;
@@ -146,5 +147,11 @@ fn main() {
     writeln!(stdout().lock(), "=== Day 11 - second puzzle ===").unwrap();
     // Uses the same input as the previous puzzle
     let result = day11::solve_puzzle_b(&input);
+    writeln!(stdout().lock(), "Solution: `{result}`").unwrap();
+
+    // Day 12 - First puzzle
+    writeln!(stdout().lock(), "=== Day 12 - First puzzle ===").unwrap();
+    let input = read_to_string("./day_12_a_input.txt").unwrap();
+    let result = day12::solve_puzzle_a(&input);
     writeln!(stdout().lock(), "Solution: `{result}`").unwrap();
 }
